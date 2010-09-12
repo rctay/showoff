@@ -314,8 +314,18 @@ class ShowOff < Sinatra::Application
         file.close
         # Now copy all the js and css
         my_path = File.join( File.dirname(__FILE__), '..', 'public')
-        ["js", "css"].each { |dir|
-          FileUtils.copy_entry("#{my_path}/#{dir}", "#{out}/#{dir}")
+
+        # Create the directory for custom css/js
+        custom_dir = "#{out}/file"
+        File.makedirs(custom_dir)
+
+        ["js", "css"].each { |type|
+          FileUtils.copy_entry("#{my_path}/#{type}", "#{out}/#{type}")
+
+          # Copy custom css/js into file/
+          Dir.glob("#{showoff.options.pres_dir}/*.#{type}").map { |path|
+            File.cp(path, custom_dir)
+          }
         }
         # Copy images
         img_dir = "#{out}/image"
