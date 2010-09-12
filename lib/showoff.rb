@@ -317,6 +317,21 @@ class ShowOff < Sinatra::Application
         ["js", "css"].each { |dir|
           FileUtils.copy_entry("#{my_path}/#{dir}", "#{out}/#{dir}")
         }
+        # Copy images
+        img_dir = "#{out}/image"
+        File.makedirs(img_dir)
+        # strip out "image/" prefix; we want to build the relative source path
+        data.scan(%r{img src="\.?/image/(.*?)"}).each { |img|
+          # get first match
+          img = img[0]
+          # assume that paths are all relative
+          img_file = "#{showoff.options.pres_dir}/#{img}"
+          if File.exist?(img_file)
+            out_img_dir = "#{img_dir}/#{File.dirname(img)}"
+            File.makedirs(out_img_dir)
+            File.cp(img_file, out_img_dir)
+          end
+        }
         # And copy the directory
         Dir.glob("#{my_path}/#{name}/*").each { |subpath|
           base = File.basename(subpath)
