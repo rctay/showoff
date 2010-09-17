@@ -123,13 +123,11 @@ class ShowOff < Sinatra::Application
       paths = path.split('/')
       paths.pop
       path = paths.join('/')
-      replacement_prefix = static ?
-        %(img src="file://#{options.pres_dir}/#{path}) :
-        %(img src="/image/#{path})
+      replacement_prefix = static ? "." : ""
       slide.gsub(/img src=\"(.*?)\"/) do |s|
         img_path = File.join(path, $1)
         w, h     = get_image_size(img_path)
-        src      = %(#{replacement_prefix}/#{$1}")
+        src      = %(img src="#{replacement_prefix}/image/#{path}/#{$1}")
         if w && h
           src << %( width="#{w}" height="#{h}")
         end
@@ -316,8 +314,33 @@ class ShowOff < Sinatra::Application
         file.close
         # Now copy all the js and css
         my_path = File.join( File.dirname(__FILE__), '..', 'public')
-        ["js", "css"].each { |dir|
-          FileUtils.copy_entry("#{my_path}/#{dir}", "#{out}/#{dir}")
+
+        # Create the directory for custom css/js
+        custom_dir = "#{out}/file"
+        File.makedirs(custom_dir)
+
+        ["js", "css"].each { |type|
+          FileUtils.copy_entry("#{my_path}/#{type}", "#{out}/#{type}")
+
+          # Copy custom css/js into file/
+          Dir.glob("#{showoff.options.pres_dir}/*.#{type}").map { |path|
+            File.cp(path, custom_dir)
+          }
+        }
+        # Copy images
+        img_dir = "#{out}/image"
+        File.makedirs(img_dir)
+        # strip out "image/" prefix; we want to build the relative source path
+        data.scan(%r{img src="\.?/image/(.*?)"}).each { |img|
+          # get first match
+          img = img[0]
+          # assume that paths are all relative
+          img_file = "#{showoff.options.pres_dir}/#{img}"
+          if File.exist?(img_file)
+            out_img_dir = "#{img_dir}/#{File.dirname(img)}"
+            File.makedirs(out_img_dir)
+            File.cp(img_file, out_img_dir)
+          end
         }
         # And copy the directory
         Dir.glob("#{my_path}/#{name}/*").each { |subpath|
