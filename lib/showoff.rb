@@ -123,13 +123,11 @@ class ShowOff < Sinatra::Application
       paths = path.split('/')
       paths.pop
       path = paths.join('/')
-      replacement_prefix = static ?
-        %(img src="file://#{options.pres_dir}/#{path}) :
-        %(img src="/image/#{path})
+      replacement_prefix = static ? "." : ""
       slide.gsub(/img src=\"(.*?)\"/) do |s|
         img_path = File.join(path, $1)
         w, h     = get_image_size(img_path)
-        src      = %(#{replacement_prefix}/#{$1}")
+        src      = %(img src="#{replacement_prefix}/image/#{path}/#{$1}")
         if w && h
           src << %( width="#{w}" height="#{h}")
         end
